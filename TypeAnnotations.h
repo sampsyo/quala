@@ -109,17 +109,21 @@ public:
 
   void AssertCompatible(Stmt *S, llvm::StringRef LTy, llvm::StringRef RTy) {
     if (!static_cast<ImplClass*>(this)->Compatible(LTy, RTy)) {
-      impl->EmitTypeError(S, LTy, RTy);
+      impl->EmitIncompatibleError(S, LTy, RTy);
     }
   }
 
-  void EmitTypeError(clang::Stmt* S, llvm::StringRef LTy, llvm::StringRef RTy) {
-    DiagnosticsEngine &Diags = CI.getDiagnostics();
-    unsigned did = Diags.getCustomDiagID(
+  DiagnosticsEngine &Diags() const {
+    return CI.getDiagnostics();
+  }
+
+  void EmitIncompatibleError(clang::Stmt* S, llvm::StringRef LTy,
+                             llvm::StringRef RTy) {
+    unsigned did = Diags().getCustomDiagID(
       DiagnosticsEngine::Error,
       "%0 incompatible with %1"
     );
-    Diags.Report(S->getLocStart(), did)
+    Diags().Report(S->getLocStart(), did)
         << (RTy.size() ? RTy : "unannotated")
         << (LTy.size() ? LTy : "unannotated")
         << CharSourceRange(S->getSourceRange(), false);

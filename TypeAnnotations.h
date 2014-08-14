@@ -46,16 +46,23 @@ public:
     }
     StringRef ty = StmtVisitor<ImplClass, llvm::StringRef>::Visit(S);
     if (ty.size()) {
-      llvm::errs() << "FIXME assign the new type: " << ty << " ";
-      S->dump();
+      AddAnnotation(llvm::cast<Expr>(S), ty);
     }
     return ty;
+  }
+
+  /*** ANNOTATION ASSIGNMENT HELPER ***/
+
+  void AddAnnotation(Expr *E, StringRef A) const {
+    // TODO check whether it already has the annotation & do nothing
+    E->setType(CI.getASTContext().getAnnotatedType(E->getType(), A));
   }
 
   /*** ANNOTATION LOOKUP HELPERS ***/
 
   llvm::StringRef AnnotationOf(const Type *T) const {
     // TODO step through desugaring (typedefs, etc.)
+    // TODO multiple annotations?
     if (auto *AT = llvm::dyn_cast<AnnotatedType>(T)) {
       return AT->getAnnotation();
     } else {

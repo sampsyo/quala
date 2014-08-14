@@ -26,23 +26,44 @@ public:
 };
 
 template<typename ImplClass>
-class Typer : public StmtVisitor<ImplClass, llvm::StringRef> {
+class Annotator : public StmtVisitor<ImplClass, llvm::StringRef> {
 public:
   CompilerInstance &CI;
   ImplClass *impl;
   FunctionDecl *CurFunc;
   bool Instrument;
 
-  Typer(CompilerInstance &_ci, bool _instrument) :
+  Annotator(CompilerInstance &_ci, bool _instrument) :
     CI(_ci),
     impl(static_cast<ImplClass*>(this)),
     CurFunc(NULL),
     Instrument(_instrument)
   {};
 
-  llvm::StringRef TypeOf(Expr *E) {
-    llvm::errs() << "FIXME look up the type\n";
-    return StringRef();
+  llvm::StringRef AnnotationOf(const Type *T) const {
+    // TODO step through desugaring (typedefs, etc.)
+    if (auto *AT = llvm::dyn_cast<AnnotatedType>(T)) {
+      return AT->getAnnotation();
+    } else {
+      return StringRef();
+    }
+  }
+
+  llvm::StringRef AnnotationOf(QualType QT) const {
+    const Type *T = QT.getTypePtrOrNull();
+    if (!T) {
+      return StringRef();
+    } else {
+      return AnnotationOf(T);
+    }
+  }
+
+  llvm::StringRef AnnotationOf(const Expr *E) const {
+    if (!E) {
+      return StringRef();
+    } else {
+      return AnnotationOf(E->getType());
+    }
   }
 
   llvm::StringRef Visit(Stmt *S) {
@@ -58,15 +79,15 @@ public:
 };
 
 // Hack to go bottom-up (postorder) on statements.
-template<typename TyperClass>
-class TAVisitor : public RecursiveASTVisitor< TAVisitor<TyperClass> > {
+template<typename AnnotatorClass>
+class TAVisitor : public RecursiveASTVisitor< TAVisitor<AnnotatorClass> > {
 public:
   bool TraverseStmt(Stmt *S) {
     // Super traversal: visit children.
     RecursiveASTVisitor<TAVisitor>::TraverseStmt(S);
 
     // Now give type to parent.
-    StringRef ty = Typer->Visit(S);
+    StringRef ty = Annotator->Visit(S);
     DEBUG(if (S && isa<Expr>(S)) S->dump());
     DEBUG(llvm::errs() << "result type: " << ty << "\n");
 
@@ -75,34 +96,34 @@ public:
 
   // Tell the typer which function it's inside.
   bool TraverseFunctionDecl(FunctionDecl *D) {
-    Typer->CurFunc = D;
+    Annotator->CurFunc = D;
     RecursiveASTVisitor<TAVisitor>::TraverseFunctionDecl(D);
-    Typer->CurFunc = NULL;
+    Annotator->CurFunc = NULL;
     return true;
   }
 
   // Disable "data recursion", which skips calls to Traverse*.
   bool shouldUseDataRecursionFor(Stmt *S) const { return false; }
 
-  TyperClass *Typer;
+  AnnotatorClass *Annotator;
 };
 
-template<typename TyperClass>
+template<typename AnnotatorClass>
 class TAConsumer : public ASTConsumer {
 public:
   CompilerInstance &CI;
-  TAVisitor<TyperClass> Visitor;
-  TyperClass Typer;
+  TAVisitor<AnnotatorClass> Visitor;
+  AnnotatorClass Annotator;
   bool Instrument;
 
   TAConsumer(CompilerInstance &_ci, bool _instrument) :
     CI(_ci),
-    Typer(_ci, _instrument),
+    Annotator(_ci, _instrument),
     Instrument(_instrument)
     {}
 
   virtual void Initialize(ASTContext &Context) {
-    Visitor.Typer = &Typer;
+    Visitor.Annotator = &Annotator;
 
     if (Instrument) {
       // DANGEROUS HACK

@@ -7,20 +7,20 @@ using namespace clang;
 
 namespace {
 
-#define TAINTED_TYPE "tainted"
+#define TAINTED_ANN "tainted"
 
-class TaintTyper : public Typer<TaintTyper> {
+class TaintAnnotator: public Annotator<TaintAnnotator> {
 public:
-  TaintTyper(CompilerInstance &ci, bool instrument)
-      : Typer(ci, instrument) {};
+  TaintAnnotator(CompilerInstance &ci, bool instrument)
+      : Annotator(ci, instrument) {};
 
   // Type rule for binary-operator expressions.
   llvm::StringRef VisitBinaryOperator(BinaryOperator *E) {
     // If either subexpression is tainted, so is this expression.
-    if (TypeOf(E->getLHS()).equals(TAINTED_TYPE))
-      return TAINTED_TYPE;
-    if (TypeOf(E->getRHS()).equals(TAINTED_TYPE))
-      return TAINTED_TYPE;
+    if (AnnotationOf(E->getLHS()).equals(TAINTED_ANN))
+      return TAINTED_ANN;
+    if (AnnotationOf(E->getRHS()).equals(TAINTED_ANN))
+      return TAINTED_ANN;
 
     // Otherwise, not tainted.
     return StringRef();
@@ -29,12 +29,12 @@ public:
   // And for unary-operator expressions.
   llvm::StringRef VisitUnaryOperator(UnaryOperator *E) {
     // Unary operator just has the type of its operand.
-    return TypeOf(E->getSubExpr());
+    return AnnotationOf(E->getSubExpr());
   }
 
   // Subtyping judgment.
   bool Compatible(StringRef LTy, StringRef RTy) {
-    return LTy.equals(TAINTED_TYPE) || !RTy.equals(TAINTED_TYPE);
+    return LTy.equals(TAINTED_ANN) || !RTy.equals(TAINTED_ANN);
   }
 };
 
@@ -42,7 +42,7 @@ class TaintTrackingAction : public PluginASTAction {
 protected:
   ASTConsumer *CreateASTConsumer(CompilerInstance &CI, llvm::StringRef) {
     // Construct a type checker for our type system.
-    return new TAConsumer<TaintTyper>(CI, true);
+    return new TAConsumer<TaintAnnotator>(CI, true);
   }
 
   bool ParseArgs(const CompilerInstance &CI,

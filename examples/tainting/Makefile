@@ -1,3 +1,5 @@
+include ../../common.mk
+
 SOURCES := TaintTracking.cpp
 HEADERS := ../../TypeAnnotations.h
 TARGET := TaintTracking.$(LIBEXT)

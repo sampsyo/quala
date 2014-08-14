@@ -1,0 +1,6 @@
+[submodule "clang"]
+	path = clang
+	url = https://github.com/sampsyo/clang-quala.git
+[submodule "llvm"]
+	path = llvm
+	url = http://llvm.org/git/llvm.git

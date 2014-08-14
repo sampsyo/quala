@@ -14,12 +14,14 @@ public:
   TaintAnnotator(CompilerInstance &ci, bool instrument)
       : Annotator(ci, instrument) {};
 
+  bool tainted(const Expr *E) const {
+    return AnnotationOf(E).equals(TAINTED_ANN);
+  }
+
   // Type rule for binary-operator expressions.
   llvm::StringRef VisitBinaryOperator(BinaryOperator *E) {
     // If either subexpression is tainted, so is this expression.
-    if (AnnotationOf(E->getLHS()).equals(TAINTED_ANN))
-      return TAINTED_ANN;
-    if (AnnotationOf(E->getRHS()).equals(TAINTED_ANN))
+    if (tainted(E->getLHS()) || tainted(E->getRHS()))
       return TAINTED_ANN;
 
     // Otherwise, not tainted.

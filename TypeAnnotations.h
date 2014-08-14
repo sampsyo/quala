@@ -40,6 +40,20 @@ public:
     Instrument(_instrument)
   {};
 
+  llvm::StringRef Visit(Stmt *S) {
+    if (!S) {
+      return StringRef();
+    }
+    StringRef ty = StmtVisitor<ImplClass, llvm::StringRef>::Visit(S);
+    if (ty.size()) {
+      llvm::errs() << "FIXME assign the new type: " << ty << " ";
+      S->dump();
+    }
+    return ty;
+  }
+
+  /*** ANNOTATION LOOKUP HELPERS ***/
+
   llvm::StringRef AnnotationOf(const Type *T) const {
     // TODO step through desugaring (typedefs, etc.)
     if (auto *AT = llvm::dyn_cast<AnnotatedType>(T)) {
@@ -66,15 +80,111 @@ public:
     }
   }
 
-  llvm::StringRef Visit(Stmt *S) {
-    if (!S) {
+  llvm::StringRef AnnotationOf(const ValueDecl *D) const {
+    if (!D) {
       return StringRef();
+    } else {
+      return AnnotationOf(D->getType());
     }
-    StringRef ty = StmtVisitor<ImplClass, llvm::StringRef>::Visit(S);
-    if (ty.size()) {
-      llvm::errs() << "FIXME do something with the new type\n";
+  }
+
+  /*** SUBTYPING (COMPATIBILITY) CHECKS ***/
+
+  // For subclasses to override: determine compatibility of two types.
+  bool Compatible(StringRef LTy, StringRef RTy) {
+    return true;
+  }
+
+  // Raise an error if the expressions are not compatible.
+  void AssertCompatible(Stmt *S, Expr *LExpr, Expr *RExpr) {
+    AssertCompatible(S, AnnotationOf(LExpr), AnnotationOf(RExpr));
+  }
+
+  void AssertCompatible(Stmt *S, llvm::StringRef LTy, llvm::StringRef RTy) {
+    if (!static_cast<ImplClass*>(this)->Compatible(LTy, RTy)) {
+      impl->EmitTypeError(S, LTy, RTy);
     }
-    return ty;
+  }
+
+  void EmitTypeError(clang::Stmt* S, llvm::StringRef LTy, llvm::StringRef RTy) {
+    DiagnosticsEngine &Diags = CI.getDiagnostics();
+    unsigned did = Diags.getCustomDiagID(
+      DiagnosticsEngine::Error,
+      "%0 incompatible with %1"
+    );
+    Diags.Report(S->getLocStart(), did)
+        << (RTy.size() ? RTy : "unannotated")
+        << (LTy.size() ? LTy : "unannotated")
+        << CharSourceRange(S->getSourceRange(), false);
+  }
+
+  /*** DEFAULT TYPING RULES ***/
+
+  // Assignment compatibility.
+  llvm::StringRef VisitBinAssign(BinaryOperator *E) {
+    impl->AssertCompatible(E, E->getLHS(), E->getRHS());
+    return AnnotationOf(E->getLHS());
+  }
+
+  llvm::StringRef VisitCompoundAssignOperator(CompoundAssignOperator *E) {
+    impl->AssertCompatible(E, E->getLHS(), E->getRHS());
+    return AnnotationOf(E->getLHS());
+  }
+
+  // Declaration initializers treated like assignments.
+  llvm::StringRef VisitDeclStmt(DeclStmt *S) {
+    for (auto i = S->decl_begin(); i != S->decl_end(); ++i) {
+      auto *VD = dyn_cast<VarDecl>(*i);
+      if (VD) {
+        Expr *Init = VD->getInit();
+        if (Init) {
+          AssertCompatible(Init, AnnotationOf(VD), AnnotationOf(Init));
+        }
+      }
+    }
+    return StringRef();
+  }
+
+  // Propagate types through implicit casts.
+  llvm::StringRef VisitImplicitCastExpr(ImplicitCastExpr *E) {
+    return AnnotationOf(E->getSubExpr());
+  }
+
+  llvm::StringRef VisitCallExpr(CallExpr *E) {
+    // Check parameter types.
+    FunctionDecl *D = E->getDirectCallee();
+    if (D) {
+      // Check parameter types.
+      if (D->param_size() == E->getNumArgs()) {
+        auto pi = D->param_begin();
+        auto ai = E->arg_begin();
+        for (; pi != D->param_end() && ai != E->arg_end(); ++pi, ++ai) {
+          StringRef paramType = AnnotationOf(*pi);
+          StringRef argType = AnnotationOf(*ai);
+          AssertCompatible(*ai, paramType, argType);
+        }
+      } else {
+        // Parameter list length mismatch. Probably a varargs function. FIXME?
+        DEBUG(llvm::errs() << "UNSOUND: varargs function\n");
+      }
+
+      return AnnotationOf(D->getReturnType());
+    }
+
+    // We couldn't determine which function is being called. Unsoundly, we
+    // check nothing and return the null type. FIXME?
+    DEBUG(llvm::errs() << "UNSOUND: indirect call\n");
+    return StringRef();
+  }
+
+  llvm::StringRef VisitReturnStmt(ReturnStmt *S) {
+    Expr *E = S->getRetValue();
+    if (E) {
+      assert(CurFunc && "return outside of function?");
+      AssertCompatible(S, AnnotationOf(CurFunc->getReturnType()),
+                       AnnotationOf(E));
+    }
+    return StringRef();
   }
 };
 

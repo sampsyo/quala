@@ -20,3 +20,12 @@ $(TARGET): $(OBJS)
 .PHONY: clean
 clean:
 	rm -rf $(TARGET) $(OBJS)
+
+# Testing stuff.
+.PHONY: test dump smoke
+test: $(TARGET)
+	$(BUILD)/llvm/bin/llvm-lit -v test
+dump: $(TARGET)
+	cd test ; ../ttclang -S -emit-llvm -o - ok.c
+smoke: $(TARGET)
+	cd test ; ../ttclang -S -emit-llvm -o /dev/null ok.c

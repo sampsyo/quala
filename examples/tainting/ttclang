@@ -1,0 +1,23 @@
+#!/bin/sh
+
+here=`dirname $0`
+basedir=$here/../..
+builtdir=$basedir/build/built
+clang=$builtdir/bin/clang
+
+# If we're invoked as a C++ compiler, pass that on to the underlying
+# invocation.
+if [ `basename $0` = "tqclang++" ]; then
+    clang="$clang++"
+fi
+
+# Find the Clang plugin library.
+if [ `uname` = "Darwin" ]; then
+    libext=dylib
+else
+    libext=so
+fi
+clanglib=$here/TaintTracking.$libext
+
+# Invoke Clang.
+exec $clang -Xclang -load -Xclang $clanglib -Xclang -add-plugin -Xclang taint-tracking $@

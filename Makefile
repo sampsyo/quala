@@ -1,4 +1,10 @@
-include common.mk
+BUILD := build
+BUILT := $(BUILD)/built
+CMAKE := cmake
+CMAKE_FLAGS := -G Ninja \
+  -DCMAKE_BUILD_TYPE:STRING=Debug \
+  -DCMAKE_INSTALL_PREFIX:PATH=$(abspath $(BUILT))
+NINJA := ninja
 
 # Convenient setup stuff for getting LLVM and Clang ready and in place.
 .PHONY: llvm

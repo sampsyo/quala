@@ -1,9 +1,6 @@
 HERE := $(dir $(lastword $(MAKEFILE_LIST)))
 BUILD := $(HERE)/build
 BUILT := $(BUILD)/built
-CMAKE := cmake
-CMAKE_FLAGS := -G Ninja -DCMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_INSTALL_PREFIX:PATH=$(realpath $(BUILT_ABS))
-NINJA := ninja
 LLVM_CONFIG := $(BUILT)/bin/llvm-config
 
 # Get LLVM build parameters from its llvm-config program.

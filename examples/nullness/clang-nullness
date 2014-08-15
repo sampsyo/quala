@@ -7,7 +7,8 @@ clang=$builtdir/bin/clang
 
 # If we're invoked as a C++ compiler, pass that on to the underlying
 # invocation.
-if [ `basename $0` = "tqclang++" ]; then
+compiler=`basename $0`
+if [ ${compiler#*++} != "$compiler" ]; then
     clang="$clang++"
 fi
 

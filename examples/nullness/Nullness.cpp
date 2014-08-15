@@ -56,8 +56,11 @@ public:
 
   // Subtyping judgment.
   bool Compatible(QualType LTy, QualType RTy) const {
-    // TODO only do this check for pointer types on the LHS
-    return nullable(LTy) || !nullable(RTy);
+    if (LTy->isPointerType()) {
+      return nullable(LTy) || !nullable(RTy);
+    } else {
+      return true;
+    }
   }
 
   void EmitIncompatibleError(clang::Stmt* S, QualType LTy,

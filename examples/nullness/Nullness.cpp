@@ -18,6 +18,10 @@ public:
     return AnnotationOf(E).equals(NULLABLE_ANN);
   }
 
+  bool nullable(const QualType T) const {
+    return AnnotationOf(T).equals(NULLABLE_ANN);
+  }
+
   // Check dereferencing and address-of expressions.
   llvm::StringRef VisitUnaryOperator(UnaryOperator *E) {
     switch (E->getOpcode()) {
@@ -51,13 +55,13 @@ public:
   }
 
   // Subtyping judgment.
-  bool Compatible(StringRef LTy, StringRef RTy) {
+  bool Compatible(QualType LTy, QualType RTy) const {
     // TODO only do this check for pointer types on the LHS
-    return LTy.equals(NULLABLE_ANN) || !RTy.equals(NULLABLE_ANN);
+    return nullable(LTy) || !nullable(RTy);
   }
 
-  void EmitIncompatibleError(clang::Stmt* S, llvm::StringRef LTy,
-                             llvm::StringRef RTy) {
+  void EmitIncompatibleError(clang::Stmt* S, QualType LTy,
+                             QualType RTy) {
     // TODO would be nice if we could give more context about *which* non-null
     // pointer is the problem.
     unsigned did = Diags().getCustomDiagID(

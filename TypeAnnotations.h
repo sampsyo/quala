@@ -98,17 +98,14 @@ public:
   /*** SUBTYPING (COMPATIBILITY) CHECKS ***/
 
   // For subclasses to override: determine compatibility of two types.
-  bool Compatible(StringRef LTy, StringRef RTy) {
+  bool Compatible(QualType LTy, QualType RTy) const {
     return true;
   }
 
-  // Raise an error if the expressions are not compatible.
-  void AssertCompatible(Stmt *S, Expr *LExpr, Expr *RExpr) {
-    AssertCompatible(S, AnnotationOf(LExpr), AnnotationOf(RExpr));
-  }
-
-  void AssertCompatible(Stmt *S, llvm::StringRef LTy, llvm::StringRef RTy) {
-    if (!static_cast<ImplClass*>(this)->Compatible(LTy, RTy)) {
+  // Raise an "incompatible" error if the expressions are not compatible. Don't
+  // override this.
+  void AssertCompatible(Stmt *S, QualType LTy, QualType RTy) const {
+    if (!impl->Compatible(LTy, RTy)) {
       impl->EmitIncompatibleError(S, LTy, RTy);
     }
   }
@@ -117,15 +114,17 @@ public:
     return CI.getDiagnostics();
   }
 
-  void EmitIncompatibleError(clang::Stmt* S, llvm::StringRef LTy,
-                             llvm::StringRef RTy) {
+  void EmitIncompatibleError(clang::Stmt* S, QualType LTy,
+                             QualType RTy) {
     unsigned did = Diags().getCustomDiagID(
       DiagnosticsEngine::Error,
       "%0 incompatible with %1"
     );
+    StringRef LAnn = AnnotationOf(LTy);
+    StringRef RAnn = AnnotationOf(RTy);
     Diags().Report(S->getLocStart(), did)
-        << (RTy.size() ? RTy : "unannotated")
-        << (LTy.size() ? LTy : "unannotated")
+        << (RAnn.size() ? RAnn : "unannotated")
+        << (LAnn.size() ? LAnn : "unannotated")
         << CharSourceRange(S->getSourceRange(), false);
   }
 
@@ -133,12 +132,12 @@ public:
 
   // Assignment compatibility.
   llvm::StringRef VisitBinAssign(BinaryOperator *E) {
-    impl->AssertCompatible(E, E->getLHS(), E->getRHS());
+    AssertCompatible(E, E->getLHS()->getType(), E->getRHS()->getType());
     return AnnotationOf(E->getLHS());
   }
 
   llvm::StringRef VisitCompoundAssignOperator(CompoundAssignOperator *E) {
-    impl->AssertCompatible(E, E->getLHS(), E->getRHS());
+    AssertCompatible(E, E->getLHS()->getType(), E->getRHS()->getType());
     return AnnotationOf(E->getLHS());
   }
 
@@ -149,7 +148,7 @@ public:
       if (VD) {
         Expr *Init = VD->getInit();
         if (Init) {
-          AssertCompatible(Init, AnnotationOf(VD), AnnotationOf(Init));
+          AssertCompatible(Init, VD->getType(), Init->getType());
         }
       }
     }
@@ -170,9 +169,7 @@ public:
         auto pi = D->param_begin();
         auto ai = E->arg_begin();
         for (; pi != D->param_end() && ai != E->arg_end(); ++pi, ++ai) {
-          StringRef paramType = AnnotationOf(*pi);
-          StringRef argType = AnnotationOf(*ai);
-          AssertCompatible(*ai, paramType, argType);
+          AssertCompatible(*ai, (*pi)->getType(), (*ai)->getType());
         }
       } else {
         // Parameter list length mismatch. Probably a varargs function. FIXME?
@@ -192,8 +189,7 @@ public:
     Expr *E = S->getRetValue();
     if (E) {
       assert(CurFunc && "return outside of function?");
-      AssertCompatible(S, AnnotationOf(CurFunc->getReturnType()),
-                       AnnotationOf(E));
+      AssertCompatible(S, CurFunc->getReturnType(), E->getType());
     }
     return StringRef();
   }

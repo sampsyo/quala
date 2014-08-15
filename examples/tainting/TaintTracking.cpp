@@ -18,6 +18,10 @@ public:
     return AnnotationOf(E).equals(TAINTED_ANN);
   }
 
+  bool tainted(const QualType T) const {
+    return AnnotationOf(T).equals(TAINTED_ANN);
+  }
+
   // Type rule for binary-operator expressions.
   llvm::StringRef VisitBinaryOperator(BinaryOperator *E) {
     // If either subexpression is tainted, so is this expression.
@@ -35,8 +39,8 @@ public:
   }
 
   // Subtyping judgment.
-  bool Compatible(StringRef LTy, StringRef RTy) {
-    return LTy.equals(TAINTED_ANN) || !RTy.equals(TAINTED_ANN);
+  bool Compatible(QualType LTy, QualType RTy) {
+    return tainted(LTy) || !tainted(RTy);
   }
 };
 

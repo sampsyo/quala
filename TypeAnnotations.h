@@ -66,7 +66,6 @@ public:
   }
 
   llvm::StringRef AnnotationOf(const Type *T) const {
-    // TODO step through desugaring (typedefs, etc.)
     // TODO multiple annotations?
     if (auto *AT = llvm::dyn_cast<AnnotatedType>(T)) {
       return AT->getAnnotation();
@@ -83,12 +82,27 @@ public:
     }
 
     // Look up the annotation.
-    const Type *T = QT.getTypePtrOrNull();
-    if (!T) {
-      return StringRef();
-    } else {
-      return AnnotationOf(T);
+    auto &Ctx = CI.getASTContext();
+    for (;;) {
+      const Type *T = QT.getTypePtrOrNull();
+      if (!T) {
+        return StringRef();
+      }
+      StringRef Ann = AnnotationOf(T);
+      if (Ann.size())
+        return Ann;
+
+      // Try stripping away one level of sugar.
+      QualType DT = QT.getSingleStepDesugaredType(Ctx);
+      if (DT == QT) {
+        break;
+      } else {
+        QT = DT;
+      }
     }
+
+    // No annotations found in desugaring sequence.
+    return StringRef();
   }
 
   llvm::StringRef AnnotationOf(const Expr *E) const {

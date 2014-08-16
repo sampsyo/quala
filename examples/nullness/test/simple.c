@@ -22,5 +22,12 @@ int main() {
   *d = 0;  // expected-warning {{may become null}} \
       expected-warning {{dereferencing nullable}}
 
+  // Or this.
+  typedef int * NULLABLE nip;
+  nip e;
+  e = 0;
+  b = e;
+  a = e;  // expected-warning {{may become null}}
+
   return 0;
 }

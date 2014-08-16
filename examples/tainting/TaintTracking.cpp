@@ -3,6 +3,7 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "llvm/Support/raw_ostream.h"
+#include "clang/Basic/Builtins.h"
 using namespace clang;
 
 namespace {
@@ -58,6 +59,19 @@ public:
       // Non-pointer type. Above check suffices.
       return true;
     }
+  }
+
+  // Endorsements.
+  llvm::StringRef VisitCallExpr(CallExpr *E) {
+    unsigned biid = E->getBuiltinCallee();
+    if (biid == Builtin::BI__builtin_annotation) {
+      auto *literal = cast<StringLiteral>(E->getArg(1));
+      if (literal->getString() == "endorse") {
+        llvm::errs() << "endorsement: ";
+        E->dump();
+      }
+    }
+    return StringRef();
   }
 };
 

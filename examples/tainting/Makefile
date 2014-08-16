@@ -28,4 +28,4 @@ test: $(TARGET)
 dump: $(TARGET)
 	cd test ; ../ttclang -S -emit-llvm -o - ok.c
 smoke: $(TARGET)
-	cd test ; ../ttclang -S -emit-llvm -o /dev/null ok.c
+	cd test ; ../ttclang -S -emit-llvm -o /dev/null endorsement.c

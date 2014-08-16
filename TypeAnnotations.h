@@ -40,22 +40,13 @@ public:
     Instrument(_instrument)
   {};
 
-  llvm::StringRef Visit(Stmt *S) {
-    if (!S) {
-      return StringRef();
-    }
-    StringRef ty = StmtVisitor<ImplClass, llvm::StringRef>::Visit(S);
-    if (ty.size()) {
-      AddAnnotation(llvm::cast<Expr>(S), ty);
-    }
-    return ty;
-  }
-
   /*** ANNOTATION ASSIGNMENT HELPER ***/
 
   void AddAnnotation(Expr *E, StringRef A) const {
     // TODO check whether it already has the annotation & do nothing
-    E->setType(CI.getASTContext().getAnnotatedType(E->getType(), A));
+    if (A.size()) {
+      E->setType(CI.getASTContext().getAnnotatedType(E->getType(), A));
+    }
   }
 
   /*** ANNOTATION LOOKUP HELPERS ***/
@@ -204,9 +195,14 @@ public:
     RecursiveASTVisitor<TAVisitor>::TraverseStmt(S);
 
     // Now give type to parent.
-    StringRef ty = Annotator->Visit(S);
-    DEBUG(if (S && isa<Expr>(S)) S->dump());
-    DEBUG(llvm::errs() << "result type: " << ty << "\n");
+    if (S) {
+      StringRef ty = Annotator->Visit(S);
+      if (auto *E = dyn_cast<Expr>(S)) {
+        DEBUG(E->dump());
+        DEBUG(llvm::errs() << "result type: " << ty << "\n");
+        Annotator->AddAnnotation(E, ty);
+      }
+    }
 
     return true;
   }

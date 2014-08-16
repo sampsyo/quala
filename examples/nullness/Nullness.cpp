@@ -59,6 +59,20 @@ public:
     return NULLABLE_ANN;
   }
 
+  // C++11 nullptr_t conversions.
+  llvm::StringRef VisitCXXMemberCallExpr(CXXMemberCallExpr *E) {
+    auto *D = E->getRecordDecl();
+    if (D->getName() == "nullptr_t") {
+      if (auto *Conv = dyn_cast<CXXConversionDecl>(E->getMethodDecl())) {
+        if (Conv->getConversionType()->isPointerType()) {
+          // An `operator T*`.
+          return NULLABLE_ANN;
+        }
+      }
+    }
+    return StringRef();
+  }
+
   // Subtyping judgment.
   bool Compatible(QualType LTy, QualType RTy) const {
     if (LTy->isPointerType()) {

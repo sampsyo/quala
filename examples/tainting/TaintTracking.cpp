@@ -22,19 +22,17 @@ public:
   }
 
   // Type rule for binary-operator expressions.
-  llvm::StringRef VisitBinaryOperator(BinaryOperator *E) {
+  void VisitBinaryOperator(BinaryOperator *E) {
     // If either subexpression is tainted, so is this expression.
-    if (tainted(E->getLHS()) || tainted(E->getRHS()))
-      return TAINTED_ANN;
-
-    // Otherwise, not tainted.
-    return StringRef();
+    if (tainted(E->getLHS()) || tainted(E->getRHS())) {
+      AddAnnotation(E, TAINTED_ANN);
+    }
   }
 
   // And for unary-operator expressions.
-  llvm::StringRef VisitUnaryOperator(UnaryOperator *E) {
+  void VisitUnaryOperator(UnaryOperator *E) {
     // Unary operator just has the type of its operand.
-    return AnnotationOf(E->getSubExpr());
+    AddAnnotation(E, AnnotationOf(E->getSubExpr()));
   }
 
   // Subtyping judgment.
@@ -62,7 +60,7 @@ public:
   }
 
   // Endorsements.
-  llvm::StringRef VisitCallExpr(CallExpr *E) {
+  void VisitCallExpr(CallExpr *E) {
     unsigned biid = E->getBuiltinCallee();
     if (biid == Builtin::BI__builtin_annotation) {
       auto *literal = cast<StringLiteral>(E->getArg(1));
@@ -71,7 +69,7 @@ public:
         E->dump();
       }
     }
-    return StringRef();
+    Annotator<TaintAnnotator>::VisitCallExpr(E);
   }
 };
 

@@ -21,7 +21,7 @@ public:
   }
 
   // Check dereferencing and address-of expressions.
-  llvm::StringRef VisitUnaryOperator(UnaryOperator *E) {
+  void VisitUnaryOperator(UnaryOperator *E) {
     switch (E->getOpcode()) {
     case UO_Deref:
       if (nullable(E->getSubExpr())) {
@@ -40,35 +40,31 @@ public:
       // TODO check pointer arithmetic?
       break;
     }
-    return StringRef();
   }
 
   // Mark null literals as null.
-  llvm::StringRef VisitIntegerLiteral(IntegerLiteral *E) {
+  void VisitIntegerLiteral(IntegerLiteral *E) {
     if (E->getValue() == 0) {
-      return NULLABLE_ANN;
-    } else {
-      return StringRef();
+      AddAnnotation(E, NULLABLE_ANN);
     }
   }
 
   // The GNU C++ NULL expression.
-  llvm::StringRef VisitGNUNullExpr(GNUNullExpr *E) {
-    return NULLABLE_ANN;
+  void VisitGNUNullExpr(GNUNullExpr *E) {
+    AddAnnotation(E, NULLABLE_ANN);
   }
 
   // C++11 nullptr_t conversions.
-  llvm::StringRef VisitCXXMemberCallExpr(CXXMemberCallExpr *E) {
+  void VisitCXXMemberCallExpr(CXXMemberCallExpr *E) {
     auto *D = E->getRecordDecl();
     if (D->getName() == "nullptr_t") {
       if (auto *Conv = dyn_cast<CXXConversionDecl>(E->getMethodDecl())) {
         if (Conv->getConversionType()->isPointerType()) {
           // An `operator T*`.
-          return NULLABLE_ANN;
+          AddAnnotation(E, NULLABLE_ANN);
         }
       }
     }
-    return StringRef();
   }
 
   // Subtyping judgment.

@@ -26,7 +26,7 @@ public:
 };
 
 template<typename ImplClass>
-class Annotator : public StmtVisitor<ImplClass, llvm::StringRef> {
+class Annotator : public StmtVisitor<ImplClass> {
 public:
   CompilerInstance &CI;
   ImplClass *impl;
@@ -40,20 +40,12 @@ public:
     Instrument(_instrument)
   {};
 
-  /*** ANNOTATION ASSIGNMENT HELPER ***/
+  /*** ANNOTATION ASSIGNMENT HELPERS ***/
 
   void AddAnnotation(Expr *E, StringRef A) const {
     // TODO check whether it already has the annotation & do nothing
     if (A.size()) {
       E->setType(CI.getASTContext().getAnnotatedType(E->getType(), A));
-    }
-  }
-
-  void AddAnnotationOrImplicit(Expr *E, StringRef A) const {
-    if (A.size()) {
-      AddAnnotation(E, A);
-    } else {
-      AddAnnotation(E, impl->ImplicitAnnotation(E->getType()));
     }
   }
 
@@ -157,18 +149,18 @@ public:
   /*** DEFAULT TYPING RULES ***/
 
   // Assignment compatibility.
-  llvm::StringRef VisitBinAssign(BinaryOperator *E) {
+  void VisitBinAssign(BinaryOperator *E) {
     AssertCompatible(E, E->getLHS()->getType(), E->getRHS()->getType());
-    return AnnotationOf(E->getLHS());
+    AddAnnotation(E, AnnotationOf(E->getLHS()));
   }
 
-  llvm::StringRef VisitCompoundAssignOperator(CompoundAssignOperator *E) {
+  void VisitCompoundAssignOperator(CompoundAssignOperator *E) {
     AssertCompatible(E, E->getLHS()->getType(), E->getRHS()->getType());
-    return AnnotationOf(E->getLHS());
+    AddAnnotation(E, AnnotationOf(E->getLHS()));
   }
 
   // Declaration initializers treated like assignments.
-  llvm::StringRef VisitDeclStmt(DeclStmt *S) {
+  void VisitDeclStmt(DeclStmt *S) {
     for (auto i = S->decl_begin(); i != S->decl_end(); ++i) {
       auto *VD = dyn_cast<VarDecl>(*i);
       if (VD) {
@@ -178,15 +170,14 @@ public:
         }
       }
     }
-    return StringRef();
   }
 
   // Propagate types through implicit casts.
-  llvm::StringRef VisitImplicitCastExpr(ImplicitCastExpr *E) {
-    return AnnotationOf(E->getSubExpr());
+  void VisitImplicitCastExpr(ImplicitCastExpr *E) {
+    AddAnnotation(E, AnnotationOf(E->getSubExpr()));
   }
 
-  llvm::StringRef VisitCallExpr(CallExpr *E) {
+  void VisitCallExpr(CallExpr *E) {
     // Check parameter types.
     FunctionDecl *D = E->getDirectCallee();
     if (D) {
@@ -202,22 +193,21 @@ public:
         DEBUG(llvm::errs() << "UNSOUND: varargs function\n");
       }
 
-      return AnnotationOf(D->getReturnType());
+      AddAnnotation(E, AnnotationOf(D->getReturnType()));
+      return;
     }
 
     // We couldn't determine which function is being called. Unsoundly, we
     // check nothing and return the null type. FIXME?
     DEBUG(llvm::errs() << "UNSOUND: indirect call\n");
-    return StringRef();
   }
 
-  llvm::StringRef VisitReturnStmt(ReturnStmt *S) {
+  void VisitReturnStmt(ReturnStmt *S) {
     Expr *E = S->getRetValue();
     if (E) {
       assert(CurFunc && "return outside of function?");
       AssertCompatible(S, CurFunc->getReturnType(), E->getType());
     }
-    return StringRef();
   }
 };
 
@@ -234,12 +224,7 @@ public:
 
     // Now give type to parent.
     if (S) {
-      StringRef ty = Annotator->Visit(S);
-      if (auto *E = dyn_cast<Expr>(S)) {
-        DEBUG(E->dump());
-        DEBUG(llvm::errs() << "result type: " << ty << "\n");
-        Annotator->AddAnnotationOrImplicit(E, ty);
-      }
+      Annotator->Visit(S);
     }
 
     return true;

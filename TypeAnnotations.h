@@ -212,10 +212,8 @@ public:
   }
 
   // Tell the typer which function it's inside.
-  bool TraverseFunctionDecl(FunctionDecl *D) {
+  bool VisitFunctionDecl(FunctionDecl *D) {
     Annotator->CurFunc = D;
-    RecursiveASTVisitor<TAVisitor>::TraverseFunctionDecl(D);
-    Annotator->CurFunc = NULL;
     return true;
   }
 

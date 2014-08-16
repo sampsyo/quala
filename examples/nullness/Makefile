@@ -26,4 +26,4 @@ clean:
 test: $(TARGET)
 	$(BUILD)/llvm/bin/llvm-lit -v test
 smoke: $(TARGET)
-	cd test ; ../clang-nullness -S -emit-llvm -o /dev/null simple.cpp
+	cd test ; ../nullness-c++ -S -emit-llvm -o /dev/null simple.cpp

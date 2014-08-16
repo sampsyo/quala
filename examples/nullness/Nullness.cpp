@@ -66,6 +66,11 @@ public:
     }
   }
 
+  // The GNU C++ NULL expression.
+  llvm::StringRef VisitGNUNullExpr(GNUNullExpr *E) {
+    return NULLABLE_ANN;
+  }
+
   // Subtyping judgment.
   bool Compatible(QualType LTy, QualType RTy) const {
     if (LTy->isPointerType()) {

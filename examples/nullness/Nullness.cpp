@@ -22,6 +22,18 @@ public:
     return AnnotationOf(T).equals(NULLABLE_ANN);
   }
 
+  llvm::StringRef ImplicitAnnotation(const QualType QT) const {
+    // Mark C++11 nullptr_t type as nullable.
+    if (auto *RecTy = dyn_cast<RecordType>(QT.getCanonicalType())) {
+      auto *D = RecTy->getDecl();
+      if (D->getName() == "nullptr_t") {
+        return NULLABLE_ANN;
+      }
+    }
+
+    return StringRef();
+  }
+
   // Check dereferencing and address-of expressions.
   llvm::StringRef VisitUnaryOperator(UnaryOperator *E) {
     switch (E->getOpcode()) {

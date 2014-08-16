@@ -51,6 +51,12 @@ public:
 
   /*** ANNOTATION LOOKUP HELPERS ***/
 
+  // Override this to provide annotations on types regardless of where they
+  // appear.
+  llvm::StringRef ImplicitAnnotation(const QualType QT) const {
+    return StringRef();
+  }
+
   llvm::StringRef AnnotationOf(const Type *T) const {
     // TODO step through desugaring (typedefs, etc.)
     // TODO multiple annotations?
@@ -62,6 +68,13 @@ public:
   }
 
   llvm::StringRef AnnotationOf(QualType QT) const {
+    // Try implicit annotation.
+    StringRef ImplicitAnn = impl->ImplicitAnnotation(QT);
+    if (ImplicitAnn.size()) {
+      return ImplicitAnn;
+    }
+
+    // Look up the annotation.
     const Type *T = QT.getTypePtrOrNull();
     if (!T) {
       return StringRef();

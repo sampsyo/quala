@@ -25,5 +25,16 @@ int main() {
   // Initializers are treated like assignments.
   int a = x * 9; // expected-error {{incompatible}}
 
+  // Both directions of flow should be invalid under pointers (because
+  // mutation).
+  TAINTED int *b;
+  int *c;
+  b = c; // expected-error {{incompatible}}
+  c = b; // expected-error {{incompatible}}
+  b = b;
+  c = c;
+  b = 0;
+  c = 0;
+
   return 0;
 }

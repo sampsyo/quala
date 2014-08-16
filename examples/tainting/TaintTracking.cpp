@@ -40,7 +40,26 @@ public:
 
   // Subtyping judgment.
   bool Compatible(QualType LTy, QualType RTy) {
-    return tainted(LTy) || !tainted(RTy);
+    // Top-level annotation: disallow tainted-to-untainted flow.
+    if (tainted(RTy) && !tainted(LTy)) {
+      return false;
+    }
+
+    if (LTy->isPointerType() && RTy->isPointerType()) {
+      // Unwrap pointer types to check that they have identical qualifiers in
+      // their pointed-to types.
+      ASTContext &Ctx = CI.getASTContext();
+      while (Ctx.UnwrapSimilarPointerTypes(LTy, RTy)) {
+        if (tainted(LTy) != tainted(RTy)) {
+          return false;
+        }
+      }
+      return true;  // Identical annotations.
+
+    } else {
+      // Non-pointer type. Above check suffices.
+      return true;
+    }
   }
 };
 

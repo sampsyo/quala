@@ -1,0 +1,32 @@
+#!/bin/sh
+
+here=`dirname $0`
+basedir=$here/..
+builtdir=$basedir/build/built
+clang=$builtdir/bin/clang
+clangargs=
+
+# Check whether we are invoked as a C++ compiler.
+if [ $(basename $0) == "c++" ]; then
+    clang=$clang++
+    cxx=1
+fi
+
+# Patch up include path on OS X.
+if xcrun --version >/dev/null 2>&1 ; then
+    toolchain=$(dirname $(dirname $(dirname $(xcrun -f clang))))
+    if [ -n "$cxx" ]; then
+        clangargs="$clangargs -I$toolchain/usr/include/c++/v1"
+        # c.f. https://gist.github.com/sampsyo/cd5a24d1158b14a83ef1
+        clangargs="$clangargs -I$toolchain/usr/lib/c++/v1"
+    fi
+fi
+
+# Work around Clang include path search bug on Debian/Ubuntu.
+if [ -e /usr/include/x86_64-linux-gnu/c++/4.8 ]; then
+    if [ -n "$cxx" ]; then
+        clangargs="$clangargs -I/usr/include/x86_64-linux-gnu/c++/4.8"
+    fi
+fi
+
+exec $clang $clangargs $@

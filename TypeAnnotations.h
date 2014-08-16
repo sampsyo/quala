@@ -211,6 +211,9 @@ public:
 template<typename AnnotatorClass>
 class TAVisitor : public RecursiveASTVisitor< TAVisitor<AnnotatorClass> > {
 public:
+  AnnotatorClass *Annotator;
+  bool SkipHeaders;
+
   bool TraverseStmt(Stmt *S) {
     // Super traversal: visit children.
     RecursiveASTVisitor<TAVisitor>::TraverseStmt(S);
@@ -228,16 +231,31 @@ public:
     return true;
   }
 
-  // Tell the typer which function it's inside.
-  bool VisitFunctionDecl(FunctionDecl *D) {
-    Annotator->CurFunc = D;
-    return true;
+  bool TraverseDecl(Decl *D) {
+    // Skip traversal of declarations in system headers.
+    if (SkipHeaders) {
+      auto Loc = D->getLocation();
+      if (Loc.isValid()) {
+        auto &Ctx = Annotator->CI.getASTContext();
+        if (Ctx.getSourceManager().isInSystemHeader(Loc)) {
+          // Do not traverse any children.
+          return true;
+        }
+      }
+    }
+
+    // Tell the annotator which function it's inside.
+    auto *Func = dyn_cast<FunctionDecl>(D);
+    if (Func)
+      Annotator->CurFunc = Func;
+    bool r = RecursiveASTVisitor< TAVisitor<AnnotatorClass> >::TraverseDecl(D);
+    if (Func)
+      Annotator->CurFunc = NULL;
+    return r;
   }
 
   // Disable "data recursion", which skips calls to Traverse*.
   bool shouldUseDataRecursionFor(Stmt *S) const { return false; }
-
-  AnnotatorClass *Annotator;
 };
 
 template<typename AnnotatorClass>
@@ -256,6 +274,7 @@ public:
 
   virtual void Initialize(ASTContext &Context) {
     Visitor.Annotator = &Annotator;
+    Visitor.SkipHeaders = true;  // TODO configurable?
 
     if (Instrument) {
       // DANGEROUS HACK

@@ -14,12 +14,10 @@ public:
   TaintAnnotator(CompilerInstance &ci, bool instrument)
       : Annotator(ci, instrument) {};
 
-  bool tainted(const Expr *E) const {
-    return AnnotationOf(E).equals(TAINTED_ANN);
-  }
-
-  bool tainted(const QualType T) const {
-    return AnnotationOf(T).equals(TAINTED_ANN);
+  // Check whether an expression or type has the "tainted" annotation.
+  template <typename T>
+  bool tainted(const T V) const {
+    return AnnotationOf(V).equals(TAINTED_ANN);
   }
 
   // Type rule for binary-operator expressions.

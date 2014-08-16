@@ -14,12 +14,10 @@ public:
   NullnessAnnotator(CompilerInstance &ci, bool instrument)
       : Annotator(ci, instrument) {};
 
-  bool nullable(const Expr *E) const {
-    return AnnotationOf(E).equals(NULLABLE_ANN);
-  }
-
-  bool nullable(const QualType T) const {
-    return AnnotationOf(T).equals(NULLABLE_ANN);
+  // Check for NULLABLE annotation.
+  template <typename T>
+  bool nullable(const T V) const {
+    return AnnotationOf(V).equals(NULLABLE_ANN);
   }
 
   // Check dereferencing and address-of expressions.

@@ -49,6 +49,14 @@ public:
     }
   }
 
+  void AddAnnotationOrImplicit(Expr *E, StringRef A) const {
+    if (A.size()) {
+      AddAnnotation(E, A);
+    } else {
+      AddAnnotation(E, impl->ImplicitAnnotation(E->getType()));
+    }
+  }
+
   /*** ANNOTATION LOOKUP HELPERS ***/
 
   // Override this to provide annotations on types regardless of where they
@@ -213,7 +221,7 @@ public:
       if (auto *E = dyn_cast<Expr>(S)) {
         DEBUG(E->dump());
         DEBUG(llvm::errs() << "result type: " << ty << "\n");
-        Annotator->AddAnnotation(E, ty);
+        Annotator->AddAnnotationOrImplicit(E, ty);
       }
     }
 

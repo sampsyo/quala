@@ -83,7 +83,6 @@ Note that declaration is careful to declare a *nullable pointer to an int*, not 
 You can also use annotations anywhere that types go, not just on variable declarations:
 
     typedef int * NULLABLE nullable_int_ptr;
-    std::set<int * NULLABLE> s;
 
 [Clang analyzer]: http://clang-analyzer.llvm.org/available_checks.html
 

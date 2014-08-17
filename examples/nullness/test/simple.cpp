@@ -16,7 +16,7 @@ int main() {
   t.insert(NULL);  // expected-warning {{may become null}}
 
   int * NULLABLE q = 0;
-  int *&foo = q;
+  int *&foo = q;  // expected-warning {{may become null}}
 
   return 0;
 }

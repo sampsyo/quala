@@ -142,6 +142,27 @@ public:
     return true;  // Identical annotations.
   }
 
+  // Utility for checking compatibility when pointer types are invariant
+  // (i.e., if you are sane). Returns true for non-pointer types. For pointer
+  // (and reference types), ensures that every annotation *below the top
+  // layer* is identical between the two types. You are supposed to check the
+  // top layer yourself, since those annotations apply to value types (i.e.,
+  // the pointers themselves).
+  bool CheckPointerInvariance(QualType LTy, QualType RTy) const {
+    if (LTy->isReferenceType() && !RTy->isReferenceType()) {
+      // Reference binding. Strip off the LHS's reference and compare from
+      // there.
+      return SamePointerTypeAnnotations(LTy->getPointeeType(), RTy, true);
+    } else if (LTy->isPointerType() && RTy->isPointerType()) {
+      // Must have identical annotations (either direction of flow is an
+      // error). Enforce comparison after the top level.
+      return SamePointerTypeAnnotations(LTy, RTy, false);
+    } else {
+      // Non-pointer type. Above check suffices.
+      return true;
+    }
+  }
+
   /*** SUBTYPING (COMPATIBILITY) CHECKS ***/
 
   // For subclasses to override: determine compatibility of two types.

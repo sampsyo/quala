@@ -72,9 +72,8 @@ public:
   bool Compatible(QualType LTy, QualType RTy) const {
     if (LTy->isPointerType()) {
       return nullable(LTy) || !nullable(RTy);
-    } else {
-      return true;
     }
+    return CheckPointerInvariance(LTy, RTy);
   }
 
   void EmitIncompatibleError(clang::Stmt* S, QualType LTy,

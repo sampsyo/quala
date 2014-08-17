@@ -125,6 +125,23 @@ public:
     }
   }
 
+  bool SamePointerTypeAnnotations(QualType T1, QualType T2,
+                                  bool outer=true) const {
+    // Optionally check the annotation on the types themselves.
+    if (outer && AnnotationOf(T1) != AnnotationOf(T2))
+      return false;
+
+    // Unwrap pointer types to check that they have identical qualifiers in
+    // their pointed-to types.
+    ASTContext &Ctx = CI.getASTContext();
+    while (Ctx.UnwrapSimilarPointerTypes(T1, T2)) {
+      if (AnnotationOf(T1) != AnnotationOf(T2)) {
+        return false;
+      }
+    }
+    return true;  // Identical annotations.
+  }
+
   /*** SUBTYPING (COMPATIBILITY) CHECKS ***/
 
   // For subclasses to override: determine compatibility of two types.

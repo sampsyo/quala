@@ -44,16 +44,9 @@ public:
     }
 
     if (LTy->isPointerType() && RTy->isPointerType()) {
-      // Unwrap pointer types to check that they have identical qualifiers in
-      // their pointed-to types.
-      ASTContext &Ctx = CI.getASTContext();
-      while (Ctx.UnwrapSimilarPointerTypes(LTy, RTy)) {
-        if (tainted(LTy) != tainted(RTy)) {
-          return false;
-        }
-      }
-      return true;  // Identical annotations.
-
+      // Must have identical annotations (either direction of flow is an
+      // error).
+      return SamePointerTypeAnnotations(LTy, RTy, false);
     } else {
       // Non-pointer type. Above check suffices.
       return true;

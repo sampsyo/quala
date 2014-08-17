@@ -43,9 +43,13 @@ public:
       return false;
     }
 
-    if (LTy->isPointerType() && RTy->isPointerType()) {
+    if (LTy->isReferenceType() && !RTy->isReferenceType()) {
+      // Reference binding. Strip off the LHS's reference and compare from
+      // there.
+      return SamePointerTypeAnnotations(LTy->getPointeeType(), RTy, true);
+    } else if (LTy->isPointerType() && RTy->isPointerType()) {
       // Must have identical annotations (either direction of flow is an
-      // error).
+      // error). Enforce comparison after the top level.
       return SamePointerTypeAnnotations(LTy, RTy, false);
     } else {
       // Non-pointer type. Above check suffices.

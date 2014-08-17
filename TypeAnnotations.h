@@ -49,6 +49,18 @@ public:
     }
   }
 
+  // Remove an annotated type *at the outermost level of the type tree*. For
+  // example, this will not remove annotations under typedefs (which seems
+  // impossible).
+  void RemoveAnnotation(Expr *E) const {
+    // TODO remove a specific annotation? or all, if multiple?
+    // Look for an AnnotatedType in the desugaring chain.
+    QualType T = E->getType();
+    if (auto *AT = dyn_cast<AnnotatedType>(T)) {
+      E->setType(AT->getBaseType());
+    }
+  }
+
   /*** ANNOTATION LOOKUP HELPERS ***/
 
   // Override this to provide annotations on types regardless of where they

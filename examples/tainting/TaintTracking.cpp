@@ -9,6 +9,7 @@ using namespace clang;
 namespace {
 
 #define TAINTED_ANN "tainted"
+#define UNTAINTED_ANN "untainted"
 
 class TaintAnnotator: public Annotator<TaintAnnotator> {
 public:
@@ -65,8 +66,14 @@ public:
     if (biid == Builtin::BI__builtin_annotation) {
       auto *literal = cast<StringLiteral>(E->getArg(1));
       if (literal->getString() == "endorse") {
-        llvm::errs() << "endorsement: ";
-        E->dump();
+        // Most of the time, an untainted type just has no annotation
+        // (i.e., the default). For endorsements, however, we need to mask any
+        // potential "tainted" annotation anywhere in the hierarchy with
+        // another annotation so that AnnotationOf returns this instead the
+        // old type (in the case that the "tainted" is buried somewhere under
+        // a typedef, for example).
+        RemoveAnnotation(E);
+        AddAnnotation(E, "untainted");
       }
     }
     Annotator<TaintAnnotator>::VisitCallExpr(E);

@@ -11,5 +11,9 @@ int main() {
   y = x; // expected-error {{incompatible}}
   y = ENDORSE(x);
 
+  if (ENDORSE(x)) {}
+  if (ENDORSE(x == 2)) {}
+  if (ENDORSE(x) == 2) {}
+
   return 0;
 }

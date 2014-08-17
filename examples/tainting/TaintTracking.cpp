@@ -78,6 +78,36 @@ public:
     }
     Annotator<TaintAnnotator>::VisitCallExpr(E);
   }
+
+  // Conditionals/control flow. Enforce untainted conditions.
+  void VisitIfStmt(IfStmt *S) {
+    checkCondition(S->getCond());
+  }
+  void VisitForStmt(ForStmt *S) {
+    checkCondition(S->getCond());
+  }
+  void VisitWhileStmt(WhileStmt *S) {
+    checkCondition(S->getCond());
+  }
+  void VisitDoStmt(DoStmt *S) {
+    checkCondition(S->getCond());
+  }
+  void VisitConditionalOperator(ConditionalOperator *E) {
+    checkCondition(E->getCond());
+  }
+  void VisitBinaryConditionalOperator(BinaryConditionalOperator *E) {
+    checkCondition(E->getCond());
+  }
+  void checkCondition(Expr *E) {
+    if (tainted(E)) {
+      unsigned did = Diags().getCustomDiagID(
+        DiagnosticsEngine::Error,
+        "tainted condition"
+      );
+      Diags().Report(E->getLocStart(), did)
+          << CharSourceRange(E->getSourceRange(), false);
+    }
+  }
 };
 
 class TaintTrackingAction : public PluginASTAction {

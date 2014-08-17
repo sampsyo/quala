@@ -184,9 +184,12 @@ public:
     }
   }
 
-  // Propagate types through implicit casts.
+  // Propagate types through implicit casts and other "invisible" expressions.
   void VisitImplicitCastExpr(ImplicitCastExpr *E) {
     AddAnnotation(E, AnnotationOf(E->getSubExpr()));
+  }
+  void VisitMaterializeTemporaryExpr(MaterializeTemporaryExpr *E) {
+    AddAnnotation(E, AnnotationOf(E->GetTemporaryExpr()));
   }
 
   // Visit all kinds of call expressions the same way.

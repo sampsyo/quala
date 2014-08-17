@@ -65,6 +65,7 @@ public:
         }
       }
     }
+    Annotator<NullnessAnnotator>::VisitCXXMemberCallExpr(E);
   }
 
   // Subtyping judgment.

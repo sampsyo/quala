@@ -189,7 +189,8 @@ public:
     AddAnnotation(E, AnnotationOf(E->getSubExpr()));
   }
 
-  void VisitCallExpr(CallExpr *E) {
+  // Visit all kinds of call expressions the same way.
+  void visitCall(CallExpr *E) {
     // Check parameter types.
     FunctionDecl *D = E->getDirectCallee();
     if (D) {
@@ -206,12 +207,20 @@ public:
       }
 
       AddAnnotation(E, AnnotationOf(D->getReturnType()));
-      return;
+    } else {
+      // We couldn't determine which function is being called. Unsoundly, we
+      // check nothing and return the null type. FIXME?
+      DEBUG(llvm::errs() << "UNSOUND: indirect call\n");
     }
-
-    // We couldn't determine which function is being called. Unsoundly, we
-    // check nothing and return the null type. FIXME?
-    DEBUG(llvm::errs() << "UNSOUND: indirect call\n");
+  }
+  void VisitCallExpr(CallExpr *E) {
+    visitCall(E);
+  }
+  void VisitCXXMemberCallExpr(CallExpr *E) {
+    visitCall(E);
+  }
+  void VisitCXXOperatorCallExpr(CallExpr *E) {
+    visitCall(E);
   }
 
   void VisitReturnStmt(ReturnStmt *S) {

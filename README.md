@@ -95,4 +95,8 @@ There is a mostly complete frontend type-checking framework. The [TypeAnnotation
 
 The code generation aspects are not yet implemented.
 
+Quala is by [Adrian Sampson][] and made available under the [MIT license][].
+
+[Adrian Sampson]: http://homes.cs.washington.edu/~asampson/
+[MIT license]: http://opensource.org/licenses/MIT
 [TypeAnnotations.h]: https://github.com/sampsyo/quala/blob/master/TypeAnnotations.h

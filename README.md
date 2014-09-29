@@ -19,7 +19,7 @@ I want to port this idea to C and C++ with a twist: I need custom type qualifier
 
 This repository includes LLVM and Clang as submodules to make building against the right version easy. Clone with `--recurse-submodules` and type `make llvm` to build Clang itself. This Make target uses [CMake][] and [Ninja][], which is my favorite route to a working toolchain.
 
-(Specifically, I'm tracking the unreleased 3.5 branches of LLVM and Clang. LLVM is stock and unmodified; Clang is a [patched version][clang-quala] that adds a new type kind called `AnnotatedType`.)
+(Specifically, Quala is based on version 3.5 of LLVM and Clang (the most recent release as of this writing). LLVM is stock and unmodified; Clang is a [patched version][clang-quala] that adds a new type kind called `AnnotatedType`.)
 
 [Ninja]: http://martine.github.io/ninja/
 [CMake]: http://www.cmake.org/

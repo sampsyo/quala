@@ -361,8 +361,11 @@ public:
     }
   }
 
-  virtual void HandleTranslationUnit(ASTContext &Context) {
-    Visitor.TraverseDecl(Context.getTranslationUnitDecl());
+  virtual bool HandleTopLevelDecl(DeclGroupRef DG) {
+    for (auto it : DG) {
+      Visitor.TraverseDecl(it);
+    }
+    return true;
   }
 };
 

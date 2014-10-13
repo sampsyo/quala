@@ -8,7 +8,14 @@ OBJS := $(SOURCES:%.cpp=%.o)
 
 CXXFLAGS += -I../..
 
+# Build the Clang plugin module.
 $(TARGET): $(OBJS)
+	$(CXX) $(PLUGIN_LDFLAGS) $(CXXFLAGS) \
+		$(LLVM_CXXFLAGS) $(LLVM_LDFLAGS) \
+		-o $@ $^
+
+# Build the LLVM pass module.
+NullChecks.$(LIBEXT): NullChecks.o
 	$(CXX) $(PLUGIN_LDFLAGS) $(CXXFLAGS) \
 		$(LLVM_CXXFLAGS) $(LLVM_LDFLAGS) \
 		-o $@ $^

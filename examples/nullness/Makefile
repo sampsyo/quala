@@ -1,21 +1,27 @@
 include ../../common.mk
 
-SOURCES := Nullness.cpp
+CHECKER_SOURCES := Nullness.cpp
+PASS_SOURCES := NullChecks.cpp
 HEADERS := ../../TypeAnnotations.h
-TARGET := Nullness.$(LIBEXT)
+CHECKER_TARGET := Nullness.$(LIBEXT)
+PASS_TARGET := NullChecks.$(LIBEXT)
 
-OBJS := $(SOURCES:%.cpp=%.o)
+CHECKER_OBJS := $(CHECKER_SOURCES:%.cpp=%.o)
+PASS_OBJS := $(PASS_SOURCES:%.cpp=%.o)
 
 CXXFLAGS += -I../..
 
+.PHONY: all
+all: $(CHECKER_TARGET) $(PASS_TARGET)
+
 # Build the Clang plugin module.
-$(TARGET): $(OBJS)
+$(CHECKER_TARGET): $(CHECKER_OBJS)
 	$(CXX) $(PLUGIN_LDFLAGS) $(CXXFLAGS) \
 		$(LLVM_CXXFLAGS) $(LLVM_LDFLAGS) \
 		-o $@ $^
 
 # Build the LLVM pass module.
-NullChecks.$(LIBEXT): NullChecks.o
+$(PASS_TARGET): $(PASS_OBJS)
 	$(CXX) $(PLUGIN_LDFLAGS) $(CXXFLAGS) \
 		$(LLVM_CXXFLAGS) $(LLVM_LDFLAGS) \
 		-o $@ $^
@@ -26,7 +32,7 @@ NullChecks.$(LIBEXT): NullChecks.o
 
 .PHONY: clean
 clean:
-	rm -rf $(TARGET) $(OBJS)
+	rm -rf $(CHECKER_TARGET) $(CHECKER_OBJS) $(PASS_TARGET) $(PASS_OBJS)
 
 # Testing stuff.
 .PHONY: test smoke

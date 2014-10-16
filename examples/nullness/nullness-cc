@@ -1,2 +1,7 @@
 #!/bin/sh
-exec `dirname $0`/../../bin/plugin-cc $0 Nullness nullness $@
+here=`dirname $0`
+base=$here/../..
+source $base/cchelper.sh
+
+exec $ccpath -Xclang -load -Xclang $here/Nullness.$libext \
+    -Xclang -add-plugin -Xclang nullness $@

@@ -4,4 +4,6 @@ base=$here/../..
 source $base/cchelper.sh
 
 exec $ccpath -Xclang -load -Xclang $here/Nullness.$libext \
-    -Xclang -add-plugin -Xclang nullness $@
+    -Xclang -add-plugin -Xclang nullness \
+    -Xclang -load -Xclang $here/NullChecks.$libext \
+    $@

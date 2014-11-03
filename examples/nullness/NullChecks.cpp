@@ -1,7 +1,9 @@
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/Module.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Metadata.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/IR/LegacyPassManager.h"
@@ -22,8 +24,11 @@ struct NullChecks : public FunctionPass {
 
   virtual bool runOnFunction(Function &F) {
     AnnotationInfo &AI = getAnalysis<AnnotationInfo>();
+    bool modified = false;
+
     for (auto &BB : F) {
       for (auto &I : BB) {
+        // Is this a load or store? Get the address.
         Value *Ptr = nullptr;
         if (auto *LI = dyn_cast<LoadInst>(&I)) {
           Ptr = LI->getPointerOperand();
@@ -35,12 +40,43 @@ struct NullChecks : public FunctionPass {
         // check if the pointer is nullable.
         if (Ptr) {
           if (AI.hasAnnotation(Ptr, "nullable")) {
-            Ptr->dump();
+            addCheck(*Ptr, I);
+            modified = true;
           }
         }
       }
     }
-    return false;
+
+    return modified;
+  }
+
+  Function &getCheckFunc(Module &M) {
+    LLVMContext &Ctx = M.getContext();
+
+    // Get or add the declaration.
+    Constant *C = M.getOrInsertFunction("qualaNullCheck",
+        Type::getVoidTy(Ctx), Type::getInt1Ty(Ctx), NULL);
+    auto *F = cast<Function>(C);
+
+    // If the function does not have a body yet, write it.
+    if (F->empty()) {
+      // Bld.CreateCondBr(isnull, I.getParent(), I.getParent());
+      llvm::errs() << F->size() << "\n";
+      BasicBlock *Entry = BasicBlock::Create(Ctx, "entry", F);
+      IRBuilder<> Bld(Entry);
+      Bld.CreateRetVoid();
+    }
+
+    return *F;
+  }
+
+  // Insert a null check for the given pointer value just before the
+  // instruction.
+  void addCheck(Value &Ptr, Instruction &I) {
+    IRBuilder<> Bld(&I);
+    Value *isnull = Bld.CreateIsNull(&Ptr, "isnull");
+    Module *M = I.getParent()->getParent()->getParent();
+    Bld.CreateCall(&(getCheckFunc(*M)), isnull);
   }
 };
 

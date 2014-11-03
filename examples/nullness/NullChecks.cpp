@@ -21,6 +21,7 @@ struct NullChecks : public FunctionPass {
   }
 
   virtual bool runOnFunction(Function &F) {
+    AnnotationInfo &AI = getAnalysis<AnnotationInfo>();
     for (auto &BB : F) {
       for (auto &I : BB) {
         Value *Ptr = nullptr;
@@ -33,16 +34,9 @@ struct NullChecks : public FunctionPass {
         // Dereferencing a pointer (either for a load or a store). Insert a
         // check if the pointer is nullable.
         if (Ptr) {
-          if (auto *PtrI = dyn_cast<Instruction>(Ptr)) {
-            MDNode *MD = PtrI->getMetadata("tyann");
-            if (MD) {
-              auto *MDS = cast<MDString>(MD->getOperand(0));
-              if (MDS->getString().equals("nullable")) {
-                Ptr->dump();
-              }
-            }
+          if (AI.hasAnnotation(Ptr, "nullable")) {
+            Ptr->dump();
           }
-          // TODO: Check for annotations on globals, parameters.
         }
       }
     }

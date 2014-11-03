@@ -4,7 +4,24 @@ using namespace llvm;
 
 AnnotationInfo::AnnotationInfo() : ModulePass(ID) {}
 
-bool AnnotationInfo::runOnModule(llvm::Module &M) {
+bool AnnotationInfo::runOnModule(Module &M) {
+  return false;
+}
+
+bool AnnotationInfo::hasAnnotation(Value *V, StringRef Ann) {
+  // Check instruction metadata.
+  if (auto *I = dyn_cast<Instruction>(V)) {
+    MDNode *MD = I->getMetadata("tyann");
+    if (MD) {
+      auto *MDS = cast<MDString>(MD->getOperand(0));
+      if (MDS->getString().equals(Ann)) {
+        return true;
+      }
+    }
+  }
+
+  // TODO: Check for annotations on globals, parameters.
+
   return false;
 }
 

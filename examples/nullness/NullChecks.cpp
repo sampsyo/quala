@@ -6,6 +6,8 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/IR/LegacyPassManager.h"
 
+#include "AnnotationInfo.h"
+
 using namespace llvm;
 
 namespace {
@@ -13,6 +15,10 @@ namespace {
 struct NullChecks : public FunctionPass {
   static char ID;
   NullChecks() : FunctionPass(ID) {}
+
+  virtual void getAnalysisUsage(AnalysisUsage &Info) const {
+    Info.addRequired<AnnotationInfo>();
+  }
 
   virtual bool runOnFunction(Function &F) {
     for (auto &BB : F) {

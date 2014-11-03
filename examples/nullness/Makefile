@@ -1,7 +1,7 @@
 include ../../common.mk
 
 CHECKER_SOURCES := Nullness.cpp
-PASS_SOURCES := NullChecks.cpp
+PASS_SOURCES := NullChecks.cpp ../../AnnotationInfo.cpp
 HEADERS := ../../TypeAnnotations.h
 CHECKER_TARGET := Nullness.$(LIBEXT)
 PASS_TARGET := NullChecks.$(LIBEXT)

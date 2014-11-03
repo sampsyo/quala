@@ -60,11 +60,28 @@ struct NullChecks : public FunctionPass {
 
     // If the function does not have a body yet, write it.
     if (F->empty()) {
-      // Bld.CreateCondBr(isnull, I.getParent(), I.getParent());
-      llvm::errs() << F->size() << "\n";
       BasicBlock *Entry = BasicBlock::Create(Ctx, "entry", F);
+      BasicBlock *Success = BasicBlock::Create(Ctx, "success", F);
+      BasicBlock *Failure = BasicBlock::Create(Ctx, "failure", F);
+
+      // Check block.
+      Value *isnull = F->arg_begin();
       IRBuilder<> Bld(Entry);
+      Bld.CreateCondBr(isnull, Failure, Success);
+
+      // Success (non-null) block.
+      Bld.SetInsertPoint(Success);
       Bld.CreateRetVoid();
+
+      // Failure (null) block. Call `exit(1)`.
+      Bld.SetInsertPoint(Failure);
+      AttributeSet Attrs;
+      Attrs.addAttribute(Ctx, AttributeSet::FunctionIndex,
+          Attribute::NoReturn);
+      Constant *Exit = M.getOrInsertFunction("exit", Attrs,
+          Type::getVoidTy(Ctx), Type::getInt32Ty(Ctx), NULL);
+      Bld.CreateCall(Exit, Bld.getInt32(1));
+      Bld.CreateUnreachable();
     }
 
     return *F;

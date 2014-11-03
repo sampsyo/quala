@@ -1,5 +1,7 @@
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Metadata.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/IR/LegacyPassManager.h"
@@ -13,8 +15,31 @@ struct NullChecks : public FunctionPass {
   NullChecks() : FunctionPass(ID) {}
 
   virtual bool runOnFunction(Function &F) {
-    errs() << "Hello: ";
-    errs().write_escaped(F.getName()) << '\n';
+    for (auto &BB : F) {
+      for (auto &I : BB) {
+        Value *Ptr = nullptr;
+        if (auto *LI = dyn_cast<LoadInst>(&I)) {
+          Ptr = LI->getPointerOperand();
+        } else if (auto *SI = dyn_cast<StoreInst>(&I)) {
+          Ptr = SI->getPointerOperand();
+        }
+
+        // Dereferencing a pointer (either for a load or a store). Insert a
+        // check if the pointer is nullable.
+        if (Ptr) {
+          if (auto *PtrI = dyn_cast<Instruction>(Ptr)) {
+            MDNode *MD = PtrI->getMetadata("tyann");
+            if (MD) {
+              auto *MDS = cast<MDString>(MD->getOperand(0));
+              if (MDS->getString().equals("nullable")) {
+                Ptr->dump();
+              }
+            }
+          }
+          // TODO: Check for annotations on globals, parameters.
+        }
+      }
+    }
     return false;
   }
 };

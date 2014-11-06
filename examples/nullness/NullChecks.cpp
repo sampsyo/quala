@@ -73,26 +73,23 @@ struct NullChecks : public FunctionPass {
       Bld.SetInsertPoint(Success);
       Bld.CreateRetVoid();
 
-      // Failure (null) block.
+      // Failure (null) block. If there's a funciton in the module to handle
+      // this, call it. Otherwise, call exit(3).
       Bld.SetInsertPoint(Failure);
-
-      // Call perror(3).
-      Constant *Perror = M.getOrInsertFunction("perror",
-          Type::getVoidTy(Ctx), Type::getInt8PtrTy(Ctx), NULL);
-      Value *MsgStr = Bld.CreateGlobalStringPtr(
-          "about to dereference null", "errmsg");
-      Bld.CreateCall(Perror, MsgStr);
-
-      // Call exit(3).
-      AttributeSet Attrs;
-      Attrs.addAttribute(Ctx, AttributeSet::FunctionIndex,
-          Attribute::NoReturn);
-      Constant *Exit = M.getOrInsertFunction("exit", Attrs,
-          Type::getVoidTy(Ctx), Type::getInt32Ty(Ctx), NULL);
-      Bld.CreateCall(Exit, Bld.getInt32(1));
-
-      // Terminate the failure block.
-      Bld.CreateUnreachable();
+      if (Function *Handler = M.getFunction("qualaHandleNull")) {
+        // Call the user's handler.
+        Bld.CreateCall(Handler);
+        Bld.CreateRetVoid();
+      } else {
+        // Call exit(3).
+        AttributeSet Attrs;
+        Attrs.addAttribute(Ctx, AttributeSet::FunctionIndex,
+            Attribute::NoReturn);
+        Constant *Exit = M.getOrInsertFunction("exit", Attrs,
+            Type::getVoidTy(Ctx), Type::getInt32Ty(Ctx), NULL);
+        Bld.CreateCall(Exit, Bld.getInt32(1));
+        Bld.CreateUnreachable();
+      }
     }
 
     return *F;

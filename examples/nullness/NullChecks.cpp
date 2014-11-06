@@ -73,14 +73,25 @@ struct NullChecks : public FunctionPass {
       Bld.SetInsertPoint(Success);
       Bld.CreateRetVoid();
 
-      // Failure (null) block. Call `exit(1)`.
+      // Failure (null) block.
       Bld.SetInsertPoint(Failure);
+
+      // Call perror(3).
+      Constant *Perror = M.getOrInsertFunction("perror",
+          Type::getVoidTy(Ctx), Type::getInt8PtrTy(Ctx), NULL);
+      Value *MsgStr = Bld.CreateGlobalStringPtr(
+          "about to dereference null", "errmsg");
+      Bld.CreateCall(Perror, MsgStr);
+
+      // Call exit(3).
       AttributeSet Attrs;
       Attrs.addAttribute(Ctx, AttributeSet::FunctionIndex,
           Attribute::NoReturn);
       Constant *Exit = M.getOrInsertFunction("exit", Attrs,
           Type::getVoidTy(Ctx), Type::getInt32Ty(Ctx), NULL);
       Bld.CreateCall(Exit, Bld.getInt32(1));
+
+      // Terminate the failure block.
       Bld.CreateUnreachable();
     }
 

@@ -8,5 +8,5 @@ struct AnnotationInfo : public llvm::ModulePass {
   static char ID;
   AnnotationInfo();
   virtual bool runOnModule(llvm::Module &M);
-  bool hasAnnotation(llvm::Value *V, llvm::StringRef Ann);
+  bool hasAnnotation(llvm::Value *V, llvm::StringRef Ann, uint8_t level=0);
 };

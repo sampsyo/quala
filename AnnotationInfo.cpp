@@ -1,4 +1,5 @@
 #include "AnnotationInfo.h"
+#include <llvm/IR/Constants.h>
 
 using namespace llvm;
 
@@ -8,14 +9,19 @@ bool AnnotationInfo::runOnModule(Module &M) {
   return false;
 }
 
-bool AnnotationInfo::hasAnnotation(Value *V, StringRef Ann) {
+bool AnnotationInfo::hasAnnotation(Value *V, StringRef Ann, uint8_t level) {
   // Check instruction metadata.
   if (auto *I = dyn_cast<Instruction>(V)) {
     MDNode *MD = I->getMetadata("tyann");
     if (MD) {
       auto *MDS = cast<MDString>(MD->getOperand(0));
       if (MDS->getString().equals(Ann)) {
-        return true;
+        auto *CI = cast<ConstantInt>(MD->getOperand(1));
+        if (CI->getValue() == level) {
+          return true;
+        } else {
+          return false;
+        }
       }
     }
   }

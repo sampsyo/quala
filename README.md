@@ -93,7 +93,7 @@ The [modifications to Clang][clang-quala] are relatively minor; there's one new 
 
 There is a mostly complete frontend type-checking framework. The [TypeAnnotations.h][] template header contains a "library" for writing type systems.
 
-The code generation aspects are not yet implemented.
+Limited code generation is implemented. See the nullness type system for an example that uses IR-level type information to instrument the program with dynamic pointer checks.
 
 Quala is by [Adrian Sampson][] and made available under the [MIT license][].
 

@@ -4,11 +4,11 @@
 #define TAINTED __attribute__((type_annotate("tainted")))
 
 int main() {
-  // CHECK: %x = alloca i32, align 4, !tyann [[TAINTED:![0-9]+]]
+  // CHECK: %x = alloca i32, align 4, !tyann [[TAINTED_P:![0-9]+]]
   // CHECK: %y = alloca i32, align 4
-  // CHECK: %z = alloca i32, align 4, !tyann [[TAINTED]]
+  // CHECK: %z = alloca i32, align 4, !tyann [[TAINTED_P]]
 
-  // CHECK: store i32 2, i32* %x, align 4, !tyann [[TAINTED]]
+  // CHECK: store i32 2, i32* %x, align 4, !tyann [[TAINTED:![0-9]+]]
   TAINTED int x = 2;
 
   // CHECK: store i32 3, i32* %y, align 4
@@ -21,4 +21,5 @@ int main() {
   return 0;
 }
 
-// CHECK: [[TAINTED]] = metadata !{metadata !"tainted", i8 0}
+// CHECK-DAG: [[TAINTED]] = metadata !{metadata !"tainted", i8 0}
+// CHECK-DAG: [[TAINTED_P]] = metadata !{metadata !"tainted", i8 1}

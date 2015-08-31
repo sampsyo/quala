@@ -21,5 +21,5 @@ int main() {
   return 0;
 }
 
-// CHECK-DAG: [[TAINTED]] = metadata !{metadata !"tainted", i8 0}
-// CHECK-DAG: [[TAINTED_P]] = metadata !{metadata !"tainted", i8 1}
+// CHECK-DAG: [[TAINTED]] = !{!"tainted", i8 0}
+// CHECK-DAG: [[TAINTED_P]] = !{!"tainted", i8 1}

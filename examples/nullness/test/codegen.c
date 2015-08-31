@@ -18,5 +18,5 @@ int main(int argc, char **argv) {
   return *foo;  // expected-warning {{dereferencing nullable}}
 }
 
-// CHECK-DAG: [[NULLABLE]] = metadata !{metadata !"nullable", i8 0}
-// CHECK-DAG: [[NULLABLE_P]] = metadata !{metadata !"nullable", i8 1}
+// CHECK-DAG: [[NULLABLE]] = !{!"nullable", i8 0}
+// CHECK-DAG: [[NULLABLE_P]] = !{!"nullable", i8 1}

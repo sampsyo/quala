@@ -97,9 +97,10 @@ public:
 
 class TaintTrackingAction : public PluginASTAction {
 protected:
-  ASTConsumer *CreateASTConsumer(CompilerInstance &CI, llvm::StringRef) {
+  std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
+                                                 llvm::StringRef) {
     // Construct a type checker for our type system.
-    return new TAConsumer<TaintAnnotator>(CI, true);
+    return llvm::make_unique< TAConsumer<TaintAnnotator> >(CI, true);
   }
 
   bool ParseArgs(const CompilerInstance &CI,

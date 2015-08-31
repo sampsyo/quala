@@ -16,7 +16,8 @@ bool AnnotationInfo::hasAnnotation(Value *V, StringRef Ann, uint8_t level) {
     if (MD) {
       auto *MDS = cast<MDString>(MD->getOperand(0));
       if (MDS->getString().equals(Ann)) {
-        auto *CI = cast<ConstantInt>(MD->getOperand(1));
+        auto *CAM = cast<ConstantAsMetadata>(MD->getOperand(1));
+        auto *CI = cast<ConstantInt>(CAM->getValue());
         if (CI->getValue() == level) {
           return true;
         } else {

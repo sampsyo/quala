@@ -1,7 +1,7 @@
 Quala: Type Qualifiers for LLVM/Clang
 =====================================
 
-<img src="qτ.png" align="right" width="202" height="132" alt="qτ the koala">
+<img src="qτ.jpeg" align="right" width="256" height="256" alt="qτ the koala">
 
 This is an experiment in adding overlay type systems to LLVM and Clang, inspired by Java 8's [JSR-308][] and the [Checker Framework][].
 
